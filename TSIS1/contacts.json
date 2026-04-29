@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "name": "John",
+    "surname": "Doe",
+    "email": null,
+    "birthday": null,
+    "group": null,
+    "phones": []
+  },
+  {
+    "id": 3,
+    "name": "Charlie",
+    "surname": "Brown",
+    "email": null,
+    "birthday": null,
+    "group": null,
+    "phones": []
+  },
+  {
+    "id": 4,
+    "name": "John ",
+    "surname": "Doe",
+    "email": null,
+    "birthday": null,
+    "group": "Family ",
+    "phones": [
+      {
+        "phone": "+77001234567",
+        "type": "work"
+      }
+    ]
+  }
+]

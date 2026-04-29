@@ -1,0 +1,3 @@
+[
+  {"name": "Bob", "surname": "Johnson", "email": "bob@example.com", "birthday": "1990-05-20", "group": "Work", "phones": [{"phone": "555111", "type": "mobile"}]}
+]
