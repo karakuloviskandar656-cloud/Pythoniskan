@@ -14,14 +14,14 @@ except:
 
 # Colors
 WHITE = (255, 255, 255)
-RED = (255, 0, 0)
+RED   = (255, 0, 0)
 GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+BLUE  = (0, 0, 255)
 YELLOW = (255, 255, 0)
 ORANGE = (255, 165, 0)
-CYAN = (0, 255, 255)
+CYAN  = (0, 255, 255)
 BLACK = (0, 0, 0)
-GRAY = (128, 128, 128)
+GRAY  = (128, 128, 128)
 
 # Coin colors by weight
 COIN_COLORS = {
@@ -66,10 +66,11 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x = random.randint(40, SCREEN_WIDTH - 40)
 
 class Obstacle(pygame.sprite.Sprite):
-    """Road obstacle (brown barrier, black oil, gray pothole). These will end the game if you hit them."""
+    """Road obstacle (smaller now)."""
     def __init__(self, speed):
         super().__init__()
-        self.image = pygame.Surface((40, 30))
+        # SMALLER OBSTACLES: 30x20
+        self.image = pygame.Surface((30, 20))
         self.type = random.choice(['barrier', 'oil', 'pothole'])
         if self.type == 'barrier':
             self.image.fill((139, 69, 19))   # brown
@@ -120,7 +121,7 @@ class Coin(pygame.sprite.Sprite):
         self.image.blit(w_text, (7, 4))
 
 class PowerUp(pygame.sprite.Sprite):
-    """Power‑up: Nitro (cyan N), Shield (blue S), Repair (yellow R). Collect them!"""
+    """Power‑up: Nitro (cyan N), Shield (blue S), Repair (yellow R)."""
     TYPES = {
         'nitro': (0, 255, 255),
         'shield': (0, 0, 255),
@@ -144,7 +145,7 @@ class PowerUp(pygame.sprite.Sprite):
     def update(self):
         self.rect.y += self.speed
         self.timer += 1
-        if self.timer > 600:       # disappear after ~10 sec
+        if self.timer > 600:
             self.reset()
         if self.rect.top > SCREEN_HEIGHT:
             self.reset()
@@ -191,7 +192,7 @@ class Game:
         self.all_sprites = pygame.sprite.Group()
         self.all_sprites.add(self.player)
 
-        # Spawn 3 coins immediately so you see them right away
+        # Initial coins
         for _ in range(3):
             c = Coin(self.speed)
             self.coins.add(c)
@@ -203,8 +204,21 @@ class Game:
         self.coin_timer = 0
         self.powerup_timer = 0
 
+        # Music
+        self.music_loaded = False
+        if self.sound_on:
+            try:
+                pygame.mixer.music.load("assets/background.wav")
+                pygame.mixer.music.set_volume(0.4)
+                pygame.mixer.music.play(-1)
+                self.music_loaded = True
+            except:
+                print("Could not load background music.")
+
     def spawn_enemy(self):
-        if len(self.enemies) < 3 + (self.difficulty == 'hard') * 3:
+        # Gentle increase: max enemies based on difficulty
+        max_enemies = {'easy': 2, 'normal': 3, 'hard': 4}
+        if len(self.enemies) < max_enemies.get(self.difficulty, 3):
             e = Enemy(self.speed)
             while pygame.sprite.collide_rect(e, self.player) or pygame.sprite.spritecollideany(e, self.enemies):
                 e.rect.center = (random.randint(40, SCREEN_WIDTH - 40), random.randint(-200, -50))
@@ -212,7 +226,8 @@ class Game:
             self.all_sprites.add(e)
 
     def spawn_obstacle(self):
-        if len(self.obstacles) < 2 + (self.difficulty == 'hard') * 2:
+        max_obs = {'easy': 1, 'normal': 2, 'hard': 3}
+        if len(self.obstacles) < max_obs.get(self.difficulty, 2):
             o = Obstacle(self.speed)
             while pygame.sprite.collide_rect(o, self.player) or pygame.sprite.spritecollideany(o, self.obstacles):
                 o.rect.center = (random.randint(40, SCREEN_WIDTH - 40), random.randint(-300, -50))
@@ -220,7 +235,7 @@ class Game:
             self.all_sprites.add(o)
 
     def spawn_coin(self):
-        if len(self.coins) < 4:   # keep around 4 coins on screen
+        if len(self.coins) < 4:
             c = Coin(self.speed)
             while pygame.sprite.collide_rect(c, self.player):
                 c.rect.center = (random.randint(40, SCREEN_WIDTH - 40), random.randint(-200, -30))
@@ -228,34 +243,34 @@ class Game:
             self.all_sprites.add(c)
 
     def spawn_powerup(self):
-        if len(self.powerups) == 0:   # only one power‑up at a time
+        if len(self.powerups) == 0:
             p = PowerUp(self.speed)
             while pygame.sprite.collide_rect(p, self.player):
                 p.rect.center = (random.randint(40, SCREEN_WIDTH - 40), random.randint(-300, -50))
             self.powerups.add(p)
             self.all_sprites.add(p)
 
-    def apply_powerup(self, powerup_type):
-        if powerup_type == 'nitro':
+    def apply_powerup(self, ptype):
+        if ptype == 'nitro':
             self.active_powerup = 'nitro'
-            self.powerup_time_left = 180   # 3 seconds at 60fps
+            self.powerup_time_left = 180   # 3 sec at 60 fps
             self.speed = min(self.max_speed, self.base_speed + 5)
-        elif powerup_type == 'shield':
+        elif ptype == 'shield':
             self.shield_active = True
-        elif powerup_type == 'repair':
-            zone_rect = pygame.Rect(self.player.rect.x - 50, self.player.rect.y - 200, 100, 200)
+        elif ptype == 'repair':
+            zone = pygame.Rect(self.player.rect.x - 50, self.player.rect.y - 200, 100, 200)
             for obs in list(self.obstacles):
-                if zone_rect.colliderect(obs.rect):
+                if zone.colliderect(obs.rect):
                     obs.reset()
                     break
             else:
                 for en in list(self.enemies):
-                    if zone_rect.colliderect(en.rect):
+                    if zone.colliderect(en.rect):
                         en.reset()
                         break
 
     def handle_collisions(self):
-        # Player vs enemy
+        # Enemy
         if pygame.sprite.spritecollideany(self.player, self.enemies):
             if self.shield_active:
                 self.shield_active = False
@@ -268,7 +283,7 @@ class Game:
                     crash_sound.play()
                 return True
 
-        # Player vs obstacle
+        # Obstacle
         hit_obs = pygame.sprite.spritecollide(self.player, self.obstacles, False)
         if hit_obs:
             if self.shield_active:
@@ -281,17 +296,15 @@ class Game:
                     crash_sound.play()
                 return True
 
-        # Player vs coin
-        hit_coins = pygame.sprite.spritecollide(self.player, self.coins, False)
-        for coin in hit_coins:
+        # Coin
+        for coin in pygame.sprite.spritecollide(self.player, self.coins, False):
             self.coin_score += coin.weight
             self.coins_collected += 1
             self.score += coin.weight * 10
             coin.reset()
 
-        # Player vs powerup
-        hit_powers = pygame.sprite.spritecollide(self.player, self.powerups, False)
-        for pup in hit_powers:
+        # Power‑up
+        for pup in pygame.sprite.spritecollide(self.player, self.powerups, False):
             if self.active_powerup is None or pup.type != self.active_powerup:
                 self.apply_powerup(pup.type)
             pup.reset()
@@ -318,7 +331,7 @@ class Game:
                     pygame.quit()
                     exit()
 
-            # Player movement
+            # Smooth movement (apply small delta every frame)
             keys = pygame.key.get_pressed()
             dx = 0
             if keys[pygame.K_LEFT]:
@@ -331,41 +344,51 @@ class Game:
             self.distance += self.speed * 0.1
             self.score = int(self.distance) + self.coin_score * 10
 
-            # Difficulty scaling
+            # --- Improved difficulty scaling ---
             progress = self.distance / self.goal_distance
             if self.difficulty == 'easy':
-                self.speed = self.base_speed + int(progress * 2)
+                # Speed increases very slowly, caps lower
+                self.speed = self.base_speed + int(progress * 1.5)
             elif self.difficulty == 'normal':
-                self.speed = self.base_speed + int(progress * 4)
-            else:
-                self.speed = self.base_speed + int(progress * 6)
+                self.speed = self.base_speed + int(progress * 3)
+            else:  # hard
+                self.speed = self.base_speed + int(progress * 5)
             self.speed = min(self.max_speed, self.speed)
 
             # Nitro timer
             if self.active_powerup == 'nitro':
                 self.powerup_time_left -= 1
                 if self.powerup_time_left <= 0:
-                    self.speed = min(self.max_speed, self.base_speed + int(progress * 4 if self.difficulty != 'hard' else progress * 6))
+                    # Revert to normal scaling
+                    if self.difficulty == 'easy':
+                        self.speed = self.base_speed + int(progress * 1.5)
+                    elif self.difficulty == 'normal':
+                        self.speed = self.base_speed + int(progress * 3)
+                    else:
+                        self.speed = self.base_speed + int(progress * 5)
+                    self.speed = min(self.max_speed, self.speed)
                     self.active_powerup = None
 
-            # Spawn timers
+            # Spawn timers (adjusted for difficulty)
+            enemy_delays = {'easy': 80, 'normal': 60, 'hard': 40}
+            obstacle_delays = {'easy': 100, 'normal': 70, 'hard': 50}
             self.enemy_timer += 1
-            if self.enemy_timer > max(30, 60 - int(progress * 20)):
+            if self.enemy_timer > enemy_delays.get(self.difficulty, 60):
                 self.enemy_timer = 0
                 self.spawn_enemy()
 
             self.obstacle_timer += 1
-            if self.obstacle_timer > max(50, 90 - int(progress * 30)):
+            if self.obstacle_timer > obstacle_delays.get(self.difficulty, 70):
                 self.obstacle_timer = 0
                 self.spawn_obstacle()
 
             self.coin_timer += 1
-            if self.coin_timer > 40:   # new coin roughly every 0.7 seconds
+            if self.coin_timer > 40:   # coins always frequent
                 self.coin_timer = 0
                 self.spawn_coin()
 
             self.powerup_timer += 1
-            if self.powerup_timer > 150:   # a power‑up appears roughly every 2.5 seconds
+            if self.powerup_timer > 180:   # power-up every 3 seconds
                 self.powerup_timer = 0
                 self.spawn_powerup()
 
@@ -385,6 +408,8 @@ class Game:
 
             # Collisions
             if self.handle_collisions():
+                if self.music_loaded:
+                    pygame.mixer.music.stop()
                 return {
                     'score': self.score,
                     'distance': int(self.distance),
@@ -393,18 +418,20 @@ class Game:
 
             # Finish line
             if self.distance >= self.goal_distance:
+                if self.music_loaded:
+                    pygame.mixer.music.stop()
                 return {
                     'score': self.score + 100,
                     'distance': int(self.distance),
                     'coins': self.coin_score
                 }
 
-            # Draw everything
+            # Draw
             self.screen.blit(background_img, (0, 0))
             for sprite in self.all_sprites:
                 self.screen.blit(sprite.image, sprite.rect)
 
-            # Draw HUD
+            # HUD
             y = 10
             for line in self.update_hud():
                 self.screen.blit(line, (10, y))
