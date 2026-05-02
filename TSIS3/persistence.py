@@ -33,7 +33,6 @@ def save_leaderboard(entry):
     """Add a new entry, keep only top 10, and save."""
     board = load_leaderboard()
     board.append(entry)
-    # Keep top 10 by score
     board = sorted(board, key=lambda x: x["score"], reverse=True)[:10]
     with open(LEADERBOARD_FILE, "w") as f:
         json.dump(board, f, indent=2)

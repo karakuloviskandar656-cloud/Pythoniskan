@@ -21,15 +21,11 @@ def main():
         action = show_main_menu(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
 
         if action == "play":
-            # Ask for username
             username = get_username(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
-
-            # Run the game
             game = Game(settings)
             stats = game.run()
 
             if stats:
-                # Save to leaderboard
                 entry = {
                     'name': username,
                     'score': stats['score'],
@@ -37,24 +33,21 @@ def main():
                 }
                 save_leaderboard(entry)
 
-                # Show game over screen
                 choice = show_game_over_screen(
                     screen, SCREEN_WIDTH, SCREEN_HEIGHT,
                     stats['score'], stats['distance'], stats['coins']
                 )
 
                 if choice == "retry":
-                    continue  # back to the same loop (will show play again)
+                    continue
                 else:
-                    continue  # back to main menu
+                    continue
 
         elif action == "settings":
             settings = show_settings_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
 
         elif action == "leaderboard":
             show_leaderboard_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
-
-        # Loop back to main menu
 
 if __name__ == '__main__':
     main()
